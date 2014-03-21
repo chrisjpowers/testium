@@ -37,7 +37,7 @@ Methods are available in scope. Try: navigateTo 'google.com'
 Type `methods` to see what's available.
 """
 
-module.exports = (browserName) ->
+module.exports = (browserName, testiumOptions={}) ->
   (require '../test_setup/store').set {
     logDirectory: LOG_DIRECTORY
     browser: browserName
@@ -72,16 +72,32 @@ module.exports = (browserName) ->
 
     require 'coffee-script-redux/register'
 
-    console.log WELCOME_MESSAGE
-    cli = csrepl.start { prompt: '%> ' }
-    cli.on 'exit', (exitCode) ->
-      browser.close ->
-        selenium.cleanup ->
-          process.exit(exitCode)
+    if testiumOptions.exec
+      cs = require "coffee-script-redux"
+      vm = require "vm"
+      fs = require "fs"
+      sandbox =
+        createBrowser: createBrowser
+        console: console
+        require: require
+        __dirname: process.cwd()
+        __filename: __filename
+      source = fs.readFileSync(testiumOptions.exec)
+      source = cs.cs2js(source) if /\.coffee/.test testiumOptions.exec
 
-    browser = createBrowser()
-    extend cli.context, browser
-    cli.context.methods = getMethods(browser)
+      vm.runInNewContext source, sandbox, "testium.vm"
+
+    else
+      console.log WELCOME_MESSAGE
+      cli = csrepl.start { prompt: '%> ' }
+      cli.on 'exit', (exitCode) ->
+        browser.close ->
+          selenium.cleanup ->
+            process.exit(exitCode)
+
+      browser = createBrowser()
+      extend cli.context, browser
+      cli.context.methods = getMethods(browser)
 
   getMethods = (browser) ->
     properties = Object.keys browser
@@ -91,7 +107,7 @@ module.exports = (browserName) ->
         methods.push(prop)
     methods.sort().join(', ')
 
-  process.on 'unhandledException', ->
+  process.on 'unhandledException', (e)->
     selenium.cleanup ->
       process.exit(1)
 

@@ -30,7 +30,7 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ###
 
-USAGE = 'Usage: $0 [browser|--updateSelenium|--help]'
+USAGE = 'Usage: $0 [browser|--updateSelenium|--exec path/to/file|--help]'
 
 optimist = require('optimist').usage(USAGE)
 options = optimist.argv
@@ -43,5 +43,5 @@ else if options.help
   console.log optimist.help()
 else
   browserName = options._[0] || 'firefox'
-  (require './console')(browserName)
+  (require './console')(browserName, exec: options.exec)
 
